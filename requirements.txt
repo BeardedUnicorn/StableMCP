@@ -8,3 +8,4 @@ transformers
 accelerate
 simple-aesthetics-predictor
 git+https://github.com/openai/CLIP.git
+python-dotenv

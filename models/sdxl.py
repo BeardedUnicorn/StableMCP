@@ -1,4 +1,6 @@
 import logging
+import os
+
 import torch
 from diffusers import StableDiffusionXLPipeline, UniPCMultistepScheduler
 from utils.device import get_device
@@ -6,7 +8,12 @@ from utils.device import get_device
 logger = logging.getLogger(__name__)
 
 class SDXLModel:
-    def __init__(self, model_name: str = "stabilityai/stable-diffusion-xl-base-1.0"):
+    def __init__(self, model_name: str | None = None):
+        if model_name is None:
+            model_name = os.getenv(
+                "MODEL_NAME", "stabilityai/stable-diffusion-xl-base-1.0"
+            )
+
         self.device = get_device()
         torch_dtype = torch.float16 if self.device.type == 'cuda' else torch.float32
         self.pipe = StableDiffusionXLPipeline.from_pretrained(
