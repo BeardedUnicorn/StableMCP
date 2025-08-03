@@ -2,7 +2,10 @@
 import base64
 import io
 import asyncio
+import os
 from functools import partial
+
+from dotenv import load_dotenv
 from fastmcp import FastMCP, Context
 from models.sdxl import SDXLModel
 from models.aesthetic import AestheticScorer
@@ -11,13 +14,18 @@ from utils.logger import setup_logging
 # Structured logging setup
 logger = setup_logging()
 
+# Load environment variables
+load_dotenv()
+
+MODEL_NAME = os.getenv("MODEL_NAME", "stabilityai/stable-diffusion-xl-base-1.0")
+
 # Instantiate FastMCP with HTTP streaming enabled
 mcp = FastMCP(
     name="StableMCP",
     stateless_http=True
 )
 # Initialize models
-sdxl = SDXLModel()
+sdxl = SDXLModel(model_name=MODEL_NAME)
 scorer = AestheticScorer()
 
 # This is now a SYNCHRONOUS function
@@ -107,7 +115,7 @@ async def aesthetic_score(image_b64: str) -> float:
 if __name__ == "__main__":
     mcp.run(
         transport="streamable-http",
-        host="0.0.0.0",
-        port=8000,
+        host=os.getenv("HOST", "0.0.0.0"),
+        port=int(os.getenv("PORT", 8000)),
         log_level="info",
     )
