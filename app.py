@@ -50,12 +50,28 @@ async def generate_image(
     prompt: str,
     steps: int = 10,
     retry_threshold: float = 10.0,
-    max_retries: int = 3
+    max_retries: int = 3,
+    timeout: float = 300.0,
 ) -> str:
     """
-    Generate an image via StableDiffusionXL, score it, and retry up to max_retries
-    if the aesthetic score is below retry_threshold. Streams step progress,
+    Generate an image via StableDiffusionXL, score it, and retry up to ``max_retries``
+    if the aesthetic score is below ``retry_threshold``. Streams step progress,
     then returns the best-scoring image as Base64‑encoded PNG.
+
+    Parameters
+    ----------
+    ctx : Context
+        MCP execution context used for progress streaming.
+    prompt : str
+        Text prompt for the diffusion model.
+    steps : int, optional
+        Number of inference steps for each attempt.
+    retry_threshold : float, optional
+        Minimum acceptable aesthetic score before stopping retries.
+    max_retries : int, optional
+        Maximum number of generation attempts.
+    timeout : float, optional
+        Maximum seconds to wait for a single generation attempt before aborting.
     """
     best_image = None
     best_score = -1.0
@@ -70,19 +86,28 @@ async def generate_image(
     for attempt in range(1, max_retries + 1):
         # Create a partial function to pass the LOOP and the CONTEXT to the callback
         callback_with_context = partial(progress_callback, loop, ctx)
-        
-        # Run the synchronous SDXL generation in a separate thread
-        output_images = await loop.run_in_executor(
-            None,  # Use the default thread pool executor
-            partial(
-                sdxl.generate,
-                prompt,
-                num_images=1,
-                num_inference_steps=steps,
-                callback=callback_with_context, # diffusers accepts `callback`
-                callback_steps=1 # call the callback every step
+
+        # Run the synchronous SDXL generation in a separate thread with timeout
+        try:
+            output_images = await asyncio.wait_for(
+                loop.run_in_executor(
+                    None,  # Use the default thread pool executor
+                    partial(
+                        sdxl.generate,
+                        prompt,
+                        num_images=1,
+                        num_inference_steps=steps,
+                        callback=callback_with_context,  # diffusers accepts `callback`
+                        callback_steps=1,  # call the callback every step
+                    ),
+                ),
+                timeout=timeout,
             )
-        )
+        except asyncio.TimeoutError as e:
+            logger.error(f"Image generation timed out after {timeout} seconds")
+            raise TimeoutError(
+                f"Image generation timed out after {timeout} seconds"
+            ) from e
         
         buf = io.BytesIO()
         output_images[0].save(buf, format="PNG")
