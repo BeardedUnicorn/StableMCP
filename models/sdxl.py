@@ -1,7 +1,7 @@
 import logging
 import torch
 from diffusers import StableDiffusionXLPipeline, UniPCMultistepScheduler
-from .utils import get_device
+from utils.device import get_device
 
 logger = logging.getLogger(__name__)
 
