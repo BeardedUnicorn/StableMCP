@@ -1,0 +1,10 @@
+fastmcp
+torch
+diffusers
+pillow
+torchvision
+timm
+transformers
+accelerate
+simple-aesthetics-predictor
+git+https://github.com/openai/CLIP.git
