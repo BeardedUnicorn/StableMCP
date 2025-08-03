@@ -93,14 +93,15 @@ The MCP server exposes the following endpoints for use by MCP clients (e.g., LM�
 
 #### 1. generate\_image
 
-* **Signature**: `generate_image(prompt: str, steps: int = 50, retry_threshold: float = 10.0, max_retries: int = 3) -> Stream`
+* **Signature**: `generate_image(prompt: str, steps: int = 50, retry_threshold: float = 10.0, max_retries: int = 3, timeout: float = 300.0) -> Stream`
 * **Behavior**:
 
   1. Streams progress updates in the form: `step X/50 done`.
   2. Generates an image via StableDiffusionXL.
   3. Scores the image with `aesthetic_score` internally.
   4. Retries up to `max_retries` if score < `retry_threshold`.
-  5. Emits final Base64‑encoded PNG of the best-scoring image.
+  5. Aborts a generation attempt if it exceeds `timeout` seconds.
+  6. Emits final Base64‑encoded PNG of the best-scoring image.
 
 #### 2. aesthetic\_score
 
